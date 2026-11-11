@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>미국 TOP30 + 한화솔루션 · 전고점 대비 낙폭 모니터</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+.viz-root{
+  color-scheme:light;
+  --surface-0:#f4f3ef; --surface-1:#fcfcfb; --surface-2:#efeee9;
+  --border:#e1e0da; --grid:#ebeae5; --axis:#a9a8a0;
+  --text-primary:#0b0b0b; --text-secondary:#52514e; --text-muted:#7c7b75;
+  --line:#2a78d6; --trend:#7c7b75; --dd:#c4462b; --dd-fill:rgba(196,70,43,.16);
+  --pick:#6250d6; --pick-bg:#ecebfb; --dot:#a9a8a0;
+  --serious:#c4462b; --serious-bg:#fbe9e3;
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])) .viz-root{
+    color-scheme:dark;
+    --surface-0:#121211; --surface-1:#1a1a19; --surface-2:#252523;
+    --border:#33332f; --grid:#2a2a27; --axis:#6f6e68;
+    --text-primary:#f0efec; --text-secondary:#c3c2b7; --text-muted:#929189;
+    --line:#3987e5; --trend:#929189; --dd:#f08a6c; --dd-fill:rgba(240,138,108,.18);
+    --pick:#9085e9; --pick-bg:#25213f; --dot:#6f6e68;
+    --serious:#f08a6c; --serious-bg:#3a1f17;
+  }
+}
+*{box-sizing:border-box} html,body{margin:0} body{background:var(--surface-0)}
+.viz-root{font-family:"Noto Sans KR",system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--text-primary);background:var(--surface-0);min-height:100vh;padding:28px 18px 60px;font-size:14px;line-height:1.45}
+.wrap{max-width:1240px;margin:0 auto}
+h1{font-size:22px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em}
+.sub{color:var(--text-secondary);margin:0 0 18px;font-size:13px}
+.card{background:var(--surface-1);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:16px}
+.card h2{font-size:15px;margin:0 0 2px;font-weight:700}
+.note{color:var(--text-muted);font-size:12px;margin:0 0 10px}
+.controls{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center;margin:4px 0 10px}
+.ctl{display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--text-secondary)}
+.ctl b{font-variant-numeric:tabular-nums;color:var(--text-primary);min-width:40px;display:inline-block}
+input[type=range]{accent-color:var(--pick);width:120px}
+.seg{display:inline-flex;background:var(--surface-2);border-radius:8px;padding:3px;gap:2px}
+.seg button{border:0;background:transparent;color:var(--text-secondary);font:inherit;font-size:12px;padding:4px 10px;border-radius:6px;cursor:pointer}
+.seg button.on{background:var(--surface-1);color:var(--text-primary);font-weight:500;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:500;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.badge.pick{color:var(--pick);background:var(--pick-bg)}
+.badge.dd{color:var(--serious);background:var(--serious-bg)}
+.summary{font-size:13px;color:var(--text-secondary);margin:6px 0 0}
+.summary b{color:var(--text-primary)}
+.scwrap{position:relative}
+svg{display:block;width:100%;overflow:visible}
+svg text{font-family:inherit;font-size:11px;fill:var(--text-muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(370px,1fr));gap:12px}
+.sm{background:var(--surface-1);border:1px solid var(--border);border-radius:12px;padding:12px 14px 8px;position:relative}
+.sm.is-pick{border-color:var(--pick);box-shadow:0 0 0 1px var(--pick) inset}
+.sm .hd{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.sm .tk{font-weight:700;font-size:15px}
+.sm .ko{color:var(--text-muted);font-size:12px}
+.sm .hd .badge{margin-left:auto}
+.sm .rank{color:var(--text-muted);font-size:11px;font-variant-numeric:tabular-nums}
+.mets{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:8px 0 4px}
+.met .l{font-size:11px;color:var(--text-muted)}
+.met .v{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
+.met .v.neg{color:var(--serious)}
+.met .s{font-size:11px;color:var(--text-muted);font-variant-numeric:tabular-nums}
+.box{position:relative}
+.tip{position:absolute;pointer-events:none;background:var(--surface-1);border:1px solid var(--border);border-radius:8px;padding:6px 9px;font-size:12px;box-shadow:0 4px 14px rgba(0,0,0,.12);display:none;z-index:5;white-space:nowrap;font-variant-numeric:tabular-nums}
+.tip b{display:block}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--text-secondary);margin:2px 0 10px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.lk{display:inline-block;width:16px;height:0;border-top:2px solid}
+.foot{color:var(--text-muted);font-size:12px;margin-top:18px}
+.sorter{margin-left:auto}
+@media (max-width:520px){ .grid{grid-template-columns:1fr} .mets{grid-template-columns:repeat(2,1fr)} }
+</style>
+</head>
+<body>
+<div class="viz-root"><div class="wrap">
+  <h1>“평소엔 얌전한데 지금 많이 빠진” 종목 찾기</h1>
+  <p class="sub" id="sub"></p>
+
+  <div class="card">
+    <h2>변동성 vs 현재 낙폭</h2>
+    <p class="note">오른쪽으로 갈수록 평소 주가가 많이 흔들리고, 아래로 갈수록 전고점에서 많이 빠진 종목입니다. 왼쪽 아래 보라색 영역은 아래 세 조건을 모두 만족한 종목이에요(추세 조건은 점 색으로 표시).</p>
+    <div class="controls">
+      <span class="ctl">변동성 상한 <input type="range" id="cv" min="15" max="60" step="1"><b id="cvv"></b></span>
+      <span class="ctl">현재 낙폭 기준 <input type="range" id="cd" min="5" max="60" step="1"><b id="cdv"></b></span>
+      <span class="ctl">추세 안정성(R²) 하한 <input type="range" id="cr" min="0" max="0.95" step="0.05"><b id="crv"></b></span>
+    </div>
+    <div class="scwrap" id="scbox"><svg id="sc"></svg><div class="tip" id="sctip"></div></div>
+    <p class="summary" id="summary"></p>
+  </div>
+
+  <div class="card">
+    <div class="controls" style="margin-top:0">
+      <h2 style="margin:0" id="gtitle">종목별 차트</h2>
+      <span class="ctl sorter">정렬 <span class="seg" id="sort"></span></span>
+      <span class="ctl">기간 <span class="seg" id="rng"></span></span>
+    </div>
+    <div class="legend">
+      <span><i class="lk" style="border-color:var(--line)"></i>주가 (로그 축, 월말 종가)</span>
+      <span><i class="lk" style="border-color:var(--trend);border-top-style:dashed"></i>최근 20년 추세선</span>
+      <span><i class="lk" style="border-color:var(--dd);border-top-width:6px;opacity:.5"></i>전고점 대비 낙폭 (아래 칸)</span>
+    </div>
+    <div class="grid" id="grid"></div>
+  </div>
+
+  <p class="foot">지표 정의 — <b>변동성</b>: 최근 10년 월간 수익률의 표준편차를 연율화한 값(낮을수록 평소에 덜 흔들림). <b>추세 R²</b>: 최근 20년(상장 기간이 짧으면 전체) 로그 주가가 직선 추세에 얼마나 잘 맞는지(1에 가까울수록 꾸준한 우상향·우하향). <b>연평균 추세</b>: 그 추세선의 연간 기울기. <b>낙폭÷변동성</b>: 지금 빠진 폭이 평소 1년치 흔들림의 몇 배인지. 전고점·현재 낙폭·과거 하락 기록은 일별 종가, 차트는 월말 종가(2000년 이전 분기말) 기준입니다. 데이터: Yahoo Finance(분할 반영, 배당 미반영). 참고용 시각화이며 투자 권유가 아닙니다.</p>
+</div></div>
+<script>
+const STATS = __STATS__;
+const MONTHLY = __MONTHLY__;
+const META = __META__;
+const KO0 = {"NVDA":"엔비디아","AAPL":"애플","MSFT":"마이크로소프트","GOOGL":"알파벳(구글)","AMZN":"아마존","AVGO":"브로드컴","META":"메타(페이스북)","TSLA":"테슬라","BRK-B":"버크셔 해서웨이","LLY":"일라이 릴리","JPM":"JP모건","WMT":"월마트","V":"비자","ORCL":"오라클","MA":"마스터카드","XOM":"엑슨모빌","NFLX":"넷플릭스","JNJ":"존슨앤존슨","COST":"코스트코","PLTR":"팔란티어","ABBV":"애브비","HD":"홈디포","BAC":"뱅크오브아메리카","AMD":"AMD","PG":"P&G","UNH":"유나이티드헬스","GE":"GE 에어로스페이스","CVX":"셰브론","KO":"코카콜라","CSCO":"시스코","009830.KS":"한화솔루션"};
+const KO = Object.assign({}, KO0, META.names||{});
+const label=s=>/\.K[SQ]$/.test(s)?(KO[s]||s):s;
+const isKRW=s=>/\.K[SQ]$/.test(s);
+const fmtP=(s,v)=>isKRW(s)?Math.round(v).toLocaleString("ko-KR")+"원":"$"+(v>=100?v.toFixed(0):v>=1?v.toFixed(2):v.toPrecision(2));
+const pct=(v,d=1)=>(v>0?"+":"")+v.toFixed(d)+"%";
+const ym=t=>{const y=Math.floor(t),m=Math.round((t-y)*12+0.5);return y+"."+String(m).padStart(2,"0");};
+const tOf=d=>+d.slice(0,4)+(+d.slice(5,7)-1+(+d.slice(8,10))/31)/12;
+
+// ---- metrics
+const S={};
+STATS.forEach(o=>{
+  const pts=MONTHLY[o.s];
+  let mx=-Infinity; const dd=pts.map(([t,v])=>{mx=Math.max(mx,v);return[t,(v/mx-1)*100];});
+  const mon=pts.filter(p=>p[0]>=2000);               // monthly part
+  const r=[]; for(let i=Math.max(1,mon.length-120);i<mon.length;i++) r.push(Math.log(mon[i][1]/mon[i-1][1]));
+  const m=r.reduce((a,b)=>a+b,0)/r.length; const vol=Math.sqrt(r.reduce((a,b)=>a+(b-m)**2,0)/(r.length-1))*Math.sqrt(12)*100;
+  const tw=mon.slice(-240); const xs=tw.map(p=>p[0]), ys=tw.map(p=>Math.log(p[1]));
+  const n=xs.length, mxx=xs.reduce((a,b)=>a+b)/n, myy=ys.reduce((a,b)=>a+b)/n;
+  let sxy=0,sxx=0,syy=0; for(let i=0;i<n;i++){sxy+=(xs[i]-mxx)*(ys[i]-myy);sxx+=(xs[i]-mxx)**2;syy+=(ys[i]-myy)**2;}
+  const b=sxy/sxx, r2=sxy*sxy/(sxx*syy);
+  S[o.s]={...o,ko:KO[o.s]||o.n,pts,ddS:dd,vol,r2,slope:b,icpt:myy-b*mxx,trendFrom:xs[0],cagr:(Math.exp(b)-1)*100,score:-o.dd/vol,
+    maxDD:Math.min(o.dd,...o.eps.map(e=>e[2]))};
+});
+const ALL=Object.keys(S);
+
+const st={cv:30,cd:20,cr:0.8,sort:"pick",rng:"all"};
+try{Object.assign(st,JSON.parse(localStorage.getItem("ddmon2")||"{}"));}catch(e){}
+const save=()=>{try{localStorage.setItem("ddmon2",JSON.stringify(st));}catch(e){}};
+const isPick=o=>o.vol<=st.cv && o.dd<=-st.cd && o.r2>=st.cr;
+
+document.getElementById("sub").textContent=`기준일 ${META.asof} ${META.built?"· 업데이트 "+META.built:""} · 종목 ${ALL.length}개 · 데이터: Yahoo Finance`;
+
+// ---- controls
+function bindRange(id,key,fmt){const el=document.getElementById(id),lab=document.getElementById(id+"v");el.value=st[key];lab.textContent=fmt(st[key]);el.oninput=()=>{st[key]=+el.value;lab.textContent=fmt(st[key]);save();renderScatter();renderGrid();};}
+bindRange("cv","cv",v=>v+"%"); bindRange("cd","cd",v=>"-"+v+"%"); bindRange("cr","cr",v=>v.toFixed(2));
+function seg(id,items,key,cb){const el=document.getElementById(id);const draw=()=>{el.innerHTML=items.map(([v,t])=>`<button data-v="${v}" class="${String(st[key])===v?"on":""}">${t}</button>`).join("");el.querySelectorAll("button").forEach(b=>b.onclick=()=>{st[key]=b.dataset.v;save();draw();cb();});};draw();}
+seg("sort",[["pick","관심도"],["dd","낙폭 큰 순"],["vol","변동성 낮은 순"],["r2","추세 안정 순"]],"sort",()=>renderGrid());
+seg("rng",[["all","상장 이후 전체"],["30","30년"],["20","20년"],["10","10년"]],"rng",()=>renderGrid());
+
+// ---- scatter
+function renderScatter(){
+  const box=document.getElementById("scbox"), W=box.clientWidth||900, H=380, M={l:46,r:20,t:12,b:34};
+  const xMax=Math.max(80,Math.ceil(Math.max(...ALL.map(s=>S[s].vol))/10)*10), yMin=-70;
+  const x=v=>M.l+(v-10)/(xMax-10)*(W-M.l-M.r), y=d=>M.t+(-d)/(-yMin)*(H-M.t-M.b);
+  let g=`<rect x="${x(10)}" y="${y(-st.cd)}" width="${x(st.cv)-x(10)}" height="${y(yMin)-y(-st.cd)}" fill="var(--pick-bg)"/>`;
+  for(let v=10;v<=xMax;v+=10) g+=`<line x1="${x(v)}" x2="${x(v)}" y1="${M.t}" y2="${H-M.b}" stroke="var(--grid)"/><text x="${x(v)}" y="${H-M.b+15}" text-anchor="middle">${v}%</text>`;
+  for(let d=0;d>=yMin;d-=10) g+=`<line x1="${M.l}" x2="${W-M.r}" y1="${y(d)}" y2="${y(d)}" stroke="var(--grid)"/><text x="${M.l-8}" y="${y(d)+4}" text-anchor="end">${d}%</text>`;
+  g+=`<line x1="${x(st.cv)}" x2="${x(st.cv)}" y1="${M.t}" y2="${H-M.b}" stroke="var(--pick)" stroke-dasharray="4 3"/><line x1="${M.l}" x2="${W-M.r}" y1="${y(-st.cd)}" y2="${y(-st.cd)}" stroke="var(--pick)" stroke-dasharray="4 3"/>`;
+  g+=`<text x="${W-M.r}" y="${H-2}" text-anchor="end">변동성(연율, 최근 10년) →</text><text x="${M.l}" y="${M.t-2}" text-anchor="start" style="font-size:10px"></text>`;
+  // labels with simple collision nudging
+  const pts=ALL.map(s=>({s,o:S[s],cx:x(S[s].vol),cy:y(Math.max(S[s].dd,yMin))}));
+  const lab=pts.filter(p=>p.o.dd<=-8||p.o.vol>=35||isPick(p.o)).map(p=>({p,lx:p.cx+7,ly:p.cy+4})).sort((a,b)=>a.ly-b.ly);
+  for(let i=0;i<lab.length;i++) for(let j=0;j<i;j++){ if(Math.abs(lab[i].lx-lab[j].lx)<48 && Math.abs(lab[i].ly-lab[j].ly)<12) lab[i].ly=lab[j].ly+12; }
+  g+=pts.map(p=>{const ok=p.o.r2>=st.cr, pk=isPick(p.o);return `<circle cx="${p.cx}" cy="${p.cy}" r="${pk?7:5.5}" fill="${pk?"var(--pick)":ok?"var(--line)":"var(--dot)"}" stroke="var(--surface-1)" stroke-width="2" data-s="${p.s}" style="cursor:pointer"/>`;}).join("");
+  g+=lab.map(l=>`<text x="${l.lx}" y="${l.ly}" style="fill:${isPick(l.p.o)?"var(--pick)":"var(--text-secondary)"};font-weight:${isPick(l.p.o)?700:400};pointer-events:none">${label(l.p.s)}</text>`).join("");
+  g+=`<text x="${M.l+6}" y="${H-M.b-8}" style="fill:var(--pick);font-weight:500">평소 덜 흔들리는데 많이 빠짐</text>`;
+  const svg=document.getElementById("sc"); svg.setAttribute("viewBox",`0 0 ${W} ${H}`); svg.setAttribute("height",H); svg.innerHTML=g;
+  const tip=document.getElementById("sctip");
+  svg.querySelectorAll("circle").forEach(c=>{
+    c.onmouseenter=()=>{const o=S[c.dataset.s];tip.innerHTML=`<b>${label(o.s)} · ${o.ko}</b>현재 낙폭 ${pct(o.dd)} · 변동성 ${o.vol.toFixed(0)}%<br>추세 R² ${o.r2.toFixed(2)} · 연평균 추세 ${pct(o.cagr,0)}`;tip.style.display="block";const bx=box.getBoundingClientRect(),cr=c.getBoundingClientRect();let lx=cr.left-bx.left+14;if(lx+230>bx.width)lx-=250;tip.style.left=lx+"px";tip.style.top=(cr.top-bx.top-8)+"px";};
+    c.onmouseleave=()=>tip.style.display="none";
+    c.onclick=()=>{const el=document.getElementById("c-"+c.dataset.s.replace(/\W/g,""));if(el)el.scrollIntoView({behavior:"smooth",block:"center"});};
+  });
+  const near=ALL.filter(s=>S[s].dd>-8&&S[s].vol<35).sort((a,b)=>S[a].vol-S[b].vol);
+  svg.innerHTML=g;
+  const picks=ALL.filter(s=>isPick(S[s])).sort((a,b)=>S[b].score-S[a].score);
+  document.getElementById("summary").innerHTML = (picks.length
+    ? `조건(변동성 ≤ ${st.cv}%, 낙폭 ≤ -${st.cd}%, R² ≥ ${st.cr.toFixed(2)})을 모두 만족: ${picks.map(s=>`<b>${label(s)}</b> ${pct(S[s].dd,0)}`).join(" · ")}`
+    : `현재 조건(변동성 ≤ ${st.cv}%, 낙폭 ≤ -${st.cd}%, R² ≥ ${st.cr.toFixed(2)})을 모두 만족하는 종목이 없습니다. 슬라이더로 기준을 조정해 보세요.`) + `<br><span style="color:var(--text-muted)">전고점 근처(-8% 이내, 변동성 낮은 순): ${near.map(s=>`${label(s)} ${S[s].vol.toFixed(0)}%`).join(" · ")}</span>`;
+}
+
+// ---- small multiples
+function renderGrid(){
+  const order=[...ALL].sort((a,b)=>{const A=S[a],B=S[b];
+    if(st.sort==="pick"){ if(isPick(A)!==isPick(B)) return isPick(B)-isPick(A); return B.score-A.score; }
+    if(st.sort==="dd") return A.dd-B.dd; if(st.sort==="vol") return A.vol-B.vol; return B.r2-A.r2;});
+  const grid=document.getElementById("grid");
+  grid.innerHTML=order.map((s,i)=>{const o=S[s];return `<div class="sm${isPick(o)?" is-pick":""}" id="c-${s.replace(/\W/g,"")}">
+    <div class="hd"><span class="rank">${i+1}</span><span class="tk">${label(s)}</span><span class="ko">${isKRW(s)?s.split(".")[0]+" · KRX":o.ko}</span>${isPick(o)?`<span class="badge pick">★ 조건 충족</span>`:o.dd<=-st.cd?`<span class="badge dd">▼ 낙폭 ${pct(o.dd,0)}</span>`:""}</div>
+    <div class="mets">
+      <div class="met"><div class="l">전고점 대비</div><div class="v ${o.dd<=-st.cd?"neg":""}">${pct(o.dd)}</div><div class="s">고점 ${o.athD.slice(0,7)}</div></div>
+      <div class="met"><div class="l">변동성</div><div class="v">${o.vol.toFixed(0)}%</div><div class="s">${o.vol<=st.cv?"낮음(기준 이하)":"높음"}</div></div>
+      <div class="met"><div class="l">추세 R²</div><div class="v">${o.r2.toFixed(2)}</div><div class="s">연 ${pct(o.cagr,0)}</div></div>
+      <div class="met"><div class="l">낙폭÷변동성</div><div class="v">${o.score.toFixed(2)}</div><div class="s">역대 최대 ${pct(o.maxDD,0)}</div></div>
+    </div>
+    <div class="box"><svg data-s="${s}"></svg><div class="tip"></div></div></div>`;}).join("");
+  grid.querySelectorAll("svg").forEach(drawSmall);
+}
+
+function drawSmall(svg){
+  const s=svg.dataset.s, o=S[s], W=svg.parentNode.clientWidth||360, PH=118, DH=56, gap=8, H=PH+gap+DH+16, M={l:40,r:6};
+  const tEnd=o.pts.at(-1)[0], t0=st.rng==="all"?o.pts[0][0]:Math.max(o.pts[0][0],tEnd-(+st.rng));
+  const P=o.pts.filter(p=>p[0]>=t0), D=o.ddS.filter(p=>p[0]>=t0);
+  const x=t=>M.l+(t-t0)/(tEnd-t0)*(W-M.l-M.r);
+  let lo=Math.min(...P.map(p=>p[1])), hi=Math.max(...P.map(p=>p[1])); lo*=0.85; hi*=1.12;
+  const yP=v=>4+(1-(Math.log(v)-Math.log(lo))/(Math.log(hi)-Math.log(lo)))*(PH-8);
+  const dMin=Math.min(-40,Math.floor(Math.min(...D.map(p=>p[1]))/20)*20);
+  const yD=d=>PH+gap+(-d)/(-dMin)*DH;
+  // ticks
+  let g="";
+  const lt=[]; for(let e=Math.floor(Math.log10(lo));e<=Math.ceil(Math.log10(hi));e++) for(const m of [1,2,5]){const v=m*10**e; if(v>=lo&&v<=hi) lt.push(v);}
+  const ticks=lt.length>4?lt.filter(v=>String(v).replace(/[0.]/g,"")==="1"||lt.length<=6&&String(v).replace(/[0.]/g,"")!=="2"):lt;
+  const af=v=>isKRW(s)?(v>=10000?(v/10000)+"만":v>=1000?(v/1000)+"천":v):(v>=1000?"$"+v/1000+"k":"$"+v);
+  ticks.forEach(v=>g+=`<line x1="${M.l}" x2="${W-M.r}" y1="${yP(v)}" y2="${yP(v)}" stroke="var(--grid)"/><text x="${M.l-5}" y="${yP(v)+3.5}" text-anchor="end" style="font-size:10px">${af(v)}</text>`);
+  [0,dMin/2,dMin].forEach(d=>g+=`<line x1="${M.l}" x2="${W-M.r}" y1="${yD(d)}" y2="${yD(d)}" stroke="var(--grid)"/><text x="${M.l-5}" y="${yD(d)+3.5}" text-anchor="end" style="font-size:10px">${d}%</text>`);
+  const span=tEnd-t0, step=span>40?10:span>15?5:span>6?2:1;
+  for(let y=Math.ceil(t0/step)*step;y<=tEnd;y+=step) g+=`<text x="${x(y)}" y="${H-2}" text-anchor="middle" style="font-size:10px">${y}</text>`;
+  // past ≥20% episodes shading in price panel (subtle)
+  o.eps.forEach(e=>{const a=Math.max(tOf(e[0]),t0), b=tOf(e[1]); if(b<t0||e[2]>-30) return; g+=`<rect x="${x(a)}" y="0" width="${Math.max(1,x(b)-x(a))}" height="${PH}" fill="var(--dd-fill)" opacity=".45"/>`;});
+  // trend line (last 20y fit)
+  const ta=Math.max(o.trendFrom,t0); const tv=t=>Math.exp(o.icpt+o.slope*t);
+  if(ta<tEnd) g+=`<line x1="${x(ta)}" y1="${yP(tv(ta))}" x2="${x(tEnd)}" y2="${yP(tv(tEnd))}" stroke="var(--trend)" stroke-dasharray="4 3" stroke-width="1.2"/>`;
+  g+=`<path d="${P.map((p,j)=>(j?"L":"M")+x(p[0]).toFixed(1)+","+yP(p[1]).toFixed(1)).join("")}" fill="none" stroke="var(--line)" stroke-width="1.6" stroke-linejoin="round"/>`;
+  // drawdown area
+  g+=`<path d="M${x(D[0][0])},${yD(0)}${D.map(p=>"L"+x(p[0]).toFixed(1)+","+yD(p[1]).toFixed(1)).join("")}L${x(D.at(-1)[0])},${yD(0)}Z" fill="var(--dd-fill)" stroke="var(--dd)" stroke-width="1"/>`;
+  g+=`<line x1="${M.l}" x2="${W-M.r}" y1="${yD(-st.cd)}" y2="${yD(-st.cd)}" stroke="var(--pick)" stroke-dasharray="3 3" stroke-width="1"/>`;
+  // current marker
+  const lp=P.at(-1); g+=`<circle cx="${x(lp[0])}" cy="${yP(lp[1])}" r="3.5" fill="var(--line)" stroke="var(--surface-1)" stroke-width="1.5"/>`;
+  g+=`<circle cx="${x(D.at(-1)[0])}" cy="${yD(o.dd)}" r="3.5" fill="var(--dd)" stroke="var(--surface-1)" stroke-width="1.5"/>`;
+  g+=`<line class="xh" y1="0" y2="${PH+gap+DH}" stroke="var(--axis)" stroke-dasharray="2 2" visibility="hidden"/>`;
+  svg.setAttribute("viewBox",`0 0 ${W} ${H}`); svg.setAttribute("height",H); svg.innerHTML=g;
+  const tip=svg.parentNode.querySelector(".tip"), xh=svg.querySelector(".xh");
+  svg.onmousemove=ev=>{const r=svg.getBoundingClientRect(),px=(ev.clientX-r.left)*W/r.width; if(px<M.l){svg.onmouseleave();return;}
+    const t=t0+(px-M.l)/(W-M.l-M.r)*(tEnd-t0); let bi=0,bd=1e9; P.forEach((p,j)=>{const d=Math.abs(p[0]-t); if(d<bd){bd=d;bi=j;}});
+    const p=P[bi], d=D[bi]; xh.setAttribute("x1",x(p[0])); xh.setAttribute("x2",x(p[0])); xh.setAttribute("visibility","visible");
+    tip.innerHTML=`<b>${ym(p[0])}</b>${fmtP(s,p[1])} · 낙폭 ${d[1].toFixed(1)}%`; tip.style.display="block";
+    let lx=x(p[0])/W*r.width+10; if(lx+150>r.width) lx-=170; tip.style.left=lx+"px"; tip.style.top="4px";};
+  svg.onmouseleave=()=>{tip.style.display="none"; xh.setAttribute("visibility","hidden");};
+}
+
+document.getElementById("gtitle").textContent=`종목별 차트 (${ALL.length}개)`;
+renderScatter(); renderGrid();
+let rt; window.addEventListener("resize",()=>{clearTimeout(rt);rt=setTimeout(()=>{renderScatter();renderGrid();},150);});
+</script>
+</body>
+</html>
